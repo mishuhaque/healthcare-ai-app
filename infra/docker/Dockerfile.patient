@@ -1,8 +1,14 @@
-FROM node:18
+# Inside Dockerfile for patient-frontend
+FROM node:18-alpine
+
 WORKDIR /app
-COPY frontend/patient-app/package*.json ./
-RUN npm install
-COPY frontend/patient-app ./
-RUN npm run build
-CMD ["npx", "serve", "-s", "build"]
+
+COPY . .
+
+RUN npm install && npm run build
+
+# Serve static build with serve
+RUN npm install -g serve
+CMD ["serve", "-s", "build", "-l", "3000"]
+
 

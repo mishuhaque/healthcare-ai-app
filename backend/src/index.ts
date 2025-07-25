@@ -2,7 +2,7 @@ import express from "express";
 import cors from "cors";
 import bodyParser from "body-parser";
 import dotenv from "dotenv";
-import { Configuration, OpenAIApi } from "openai";
+import OpenAI from "openai";
 import { Pool } from "pg";
 
 dotenv.config();
@@ -13,20 +13,24 @@ app.use(bodyParser.json());
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
-const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
 
 app.post("/analyze-report", async (req, res) => {
   const { patientId, reportText } = req.body;
 
-  const chat = await openai.createChatCompletion({
-    model: "gpt-4",
-    messages: [
-      { role: "system", content: "Analyze this medical report and return condition severity as 'low', 'moderate', or 'high'" },
-      { role: "user", content: reportText },
-    ],
-  });
+  const chat = await openai.chat.completions.create({
+	  model: "gpt-4",
+	  messages: [
+	    {
+	      role: "user",
+	      content: `Classify the following patient report as 'high', 'medium', or 'low' priority:\n\n${reportText}`,
+	    },
+	  ],
+	});
 
-  const priority = chat.data.choices[0].message?.content?.toLowerCase() || "unknown";
+	const priority = chat.choices[0].message?.content?.toLowerCase() || "unknown";
+
 
   await pool.query(
     "INSERT INTO reports(patient_id, report_text, priority) VALUES ($1, $2, $3)",
